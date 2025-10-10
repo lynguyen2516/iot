@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Home Web - Dữ liệu</title>
+    <link rel="stylesheet" href="css/data.css">
+</head>
+<body>
+    <div class="dashboard-container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <img src="./profile/logo.png" alt="logo" class="logo">
+                <span>My Home Web</span>
+            </div>
+            <nav class="sidebar-nav">
+                <ul>
+                    <li class="nav-item">
+                        <img src="./profile/trangchu.png" alt="trangchu" class="menu-img">
+                        <a href="main.html">Trang chủ</a>
+                    </li>
+                    <li class="nav-item active">
+                        <img src="./profile/dulieu.png" alt="dulieu" class="menu-img">
+                        <a href="data.html">Dữ liệu</a>
+                    </li>
+                    <li class="nav-item">
+                        <img src="./profile/lichsu.png" alt="lichsu" class="menu-img">
+                        <a href="history.html">Lịch sử</a>
+                    </li>
+                    <li class="nav-item">
+                        <img src="./profile/hoso.png" alt="hoso" class="menu-img">
+                        <a href="profile.html">Hồ sơ</a>
+                    </li>
+                </ul>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <h1>Bảng dữ liệu</h1>
+            <div class="filter-container">
+                <input type="text" id="searchBox" placeholder="Tìm kiếm" class="search-box">
+                <button id="applyBtn" class="apply-btn">Tìm</button>
+                <select id="filterSelect" class="filter-select">
+                    <option>Tất cả</option>
+                    <option>Nhiệt độ</option>
+                    <option>Ánh sáng</option>
+                    <option>Độ ẩm</option>
+                </select>
+              
+                <select id="sortOrderSelect" class="filter-select">
+                    <option disabled selected>Sắp xếp</option>
+                    <option>Tăng dần</option>
+                    <option>Giảm dần</option>
+                </select>
+            </div>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Nhiệt độ(°C)</th>
+                            <th>Ánh sáng(Lux)</th>
+                            <th>Độ ẩm(%)</th>
+                            <th>Thời gian</th>
+                        </tr>
+                    </thead>
+                    <tbody id="dataTableBody">
+                    </tbody>
+                </table>
+            </div>
+            <div class="pagination-container">
+                <div class="rows-per-page">
+                    <label for="rows-per-page">Hiển thị: </label>
+                    <select id="rowsPerPageSelect" class="rows-select">
+                        <option value="10" selected>10</option>
+                        <option value="20">20</option>
+                        <option value="30">30</option>
+                        <option value="40">40</option>
+                        <option value="50">50</option>
+                    </select>
+                    <span>dòng / trang</span>
+                </div>
+                <div class="pagination">
+                    <button id="prevBtn">«</button>
+                    <div id="pageNumbers"></div>
+                    <button id="nextBtn">»</button>
+                </div>
+            </div>
+        </main>
+    </div>
+    <script src="/socket.io/socket.io.js"></script> 
+    <script src="js/data.js"></script>
+</body>
+</html>

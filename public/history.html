@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lịch sử - My Home Web</title>
+  <link rel="stylesheet" href="css/history.css">
+</head>
+<body>
+  <div class="dashboard-container">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <img src="./profile/logo.png" alt="logo" class="logo">
+        <span>My Home Web</span>
+      </div>
+      <nav class="sidebar-nav">
+        <ul>
+          <li class="nav-item">
+            <img src="./profile/trangchu.png" alt="trangchu" class="menu-img home">
+            <a href="main.html">Trang chủ</a>
+          </li>
+          <li class="nav-item">
+            <img src="./profile/dulieu.png" alt="dulieu" class="menu-img data">
+            <a href="data.html">Dữ liệu</a>
+          </li>
+          <li class="nav-item active">
+            <img src="./profile/lichsu.png" alt="lichsu" class="menu-img history">
+            <a href="history.html">Lịch sử</a>
+          </li>
+          <li class="nav-item">
+            <img src="./profile/hoso.png" alt="hoso" class="menu-img profile">
+            <a href="profile.html">Hồ sơ</a>
+          </li>
+        </ul>
+      </nav>
+    </aside>
+
+    <!-- Main content -->
+    <main class="main-content">
+      <h1>Bảng dữ liệu</h1>
+        
+      <!-- Bộ lọc -->
+      <div class="filter-container">
+        <input type="text" placeholder="Tìm kiếm" class="search-box" id="searchInput">
+        <button class="apply-btn" id="applyBtn">Tìm</button>
+        <select class="filter-select" id="deviceFilter">
+          <option value="Tất cả" selected>Tất cả</option>
+          <option value="Quạt">Quạt</option>
+          <option value="Điều hòa">Điều hòa</option>
+          <option value="Đèn">Đèn</option>
+        </select>
+        <select class="filter-select" id="sortFilter">
+          <option value="Thời gian mới nhất" selected>Thời gian mới nhất</option>
+          <option value="Thời gian cũ nhất">Thời gian cũ nhất</option>
+        </select>
+      </div>
+
+      <!-- Bảng dữ liệu -->
+      <div class="table-container">
+        <table id="historyTable">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Thiết bị</th>
+              <th>Trạng thái</th>
+              <th>Thời gian</th>
+            </tr>
+          </thead>
+          <tbody id="historyTableBody">
+          </tbody>
+        </table>
+      </div>
+      <!-- Thanh chọn số lượng và phân trang -->
+      <div class="pagination-container">
+        <div class="rows-per-page">
+         <label for="rows-per-page">Hiển thị: </label>
+         <select id="rows-per-page" class="rows-select">
+          <option value="10" selected>10</option>
+          <option value="20">20</option>
+          <option value="30">30</option>
+          <option value="40">40</option>
+          <option value="50">50</option>
+        </select>
+        <span>dòng / trang</span>
+      </div>
+        <div class="pagination">
+          <button id="prevBtn">«</button>
+          <div id="pageNumbers"></div> 
+          <button id="nextBtn">»</button>
+        </div>
+      </div>
+    </main>
+  </div>
+  <script src="/socket.io/socket.io.js"></script> 
+  <script src="js/history.js"></script>
+</body>
+</html>

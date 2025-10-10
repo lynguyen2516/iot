@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Home Web</title>
+    <link rel="stylesheet" href="css/profile.css">
+</head>
+<body>
+    <div class="dashboard-container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <img src="./profile/logo.png" alt="logo" class="logo">
+                <span>My Home Web</span>
+            </div>
+            <nav class="sidebar-nav">
+                <ul>
+                    <li class="nav-item">
+                        <img src="./profile/trangchu.png" alt="trangchu" class="menu-img home">
+                        <a href="main.html">Trang chủ</a>
+                    </li>
+                    <li class="nav-item">
+                        <img src="./profile/dulieu.png" alt="dulieu" class="menu-img data">
+                        <a href="data.html">Dữ liệu</a>
+                    </li>
+                    <li class="nav-item">
+                        <img src="./profile/lichsu.png" alt="lichsu" class="menu-img history">
+                        <a href="history.html">Lịch sử</a>
+                    </li>
+                    <li class="nav-item active">
+                        <img src="./profile/hoso.png" alt="hoso" class="menu-img profile">
+                        <a href="profile.html">Hồ sơ</a>
+                    </li>
+                </ul>
+            </nav>
+        </aside>
+        
+        <main class="content">
+            <div class="profile-card">
+                <div class="avatar-container">
+                    <img src="profile/avatar.png" alt="Ảnh hồ sơ" class="avatar">
+                </div>
+                <div class="profile-info">
+                    <div class="info-item">
+                        <span class="label">Họ và tên:</span>
+                        <span class="value">Nguyễn Thị Cẩm Ly</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">Mã sinh viên:</span>
+                        <span class="value">B22DCCN514</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">Lớp:</span>
+                        <span class="value">D22HTTT05</span>
+                    </div>
+                </div>
+                
+                <div class="section-divider">
+                    <span>Liên kết</span>
+                </div>
+                
+                <div class="links-container">
+                    <a href="https://github.com/yourusername" target="_blank" class="link-item">
+                        <div class="link-icon">
+                            <img src="profile/github.png" alt="GitHub" class="git">
+                        </div>
+                        <span>GitHub</span>
+                    </a>
+                    <a href="path/to/your/document.pdf" target="_blank" class="link-item">
+                        <div class="link-icon">
+                            <img src="profile/pdf.png" alt="PDF" class="pdf">
+                        </div>
+                        <span>PDF</span>
+                    </a>
+                    <a href="http://localhost:3000/api-docs" target="_blank" class="link-item">
+                        <div class="link-icon">
+                            <img src="profile/swagger.png" alt="Swagger" class="swagger">
+                        </div>
+                        <span>Swagger</span>
+                    </a>
+                </div>
+            </div>
+        </main>
+    </div>
+</body>
+</html>

@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Home Web</title>
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="css/main.css">
+
+    <!-- Chart.js & Lucide Icons -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <img src="./profile/logo.png" alt="logo" class="logo">
+                <span>My Home Web</span>
+            </div>
+
+            <nav class="sidebar-nav">
+                <ul>
+                    <li class="nav-item active">
+                        <img src="./profile/trangchu.png" alt="trangchu" class="menu-img home">
+                        <a href="main.html">Trang chủ</a>
+                    </li>
+                    <li class="nav-item">
+                        <img src="./profile/dulieu.png" alt="dulieu" class="menu-img data">
+                        <a href="data.html">Dữ liệu</a>
+                    </li>
+                    <li class="nav-item">
+                        <img src="./profile/lichsu.png" alt="lichsu" class="menu-img history">
+                        <a href="history.html">Lịch sử</a>
+                    </li>
+                    <li class="nav-item">
+                        <img src="./profile/hoso.png" alt="hoso" class="menu-img profile">
+                        <a href="profile.html">Hồ sơ</a>
+                    </li>
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- Main content -->
+        <main class="main-content">
+            <!-- Sensor Cards -->
+            <section class="metric-cards-container">
+                <div class="metric-card temperature">
+                    <div class="sensor">
+                        <img src="./trangchu/temp.png" alt="temp" class="img-sensor"> Nhiệt độ
+                    </div>
+                    <p class="value" id="temperatureValue">°C</p>
+                </div>
+
+                <div class="metric-card humidity">
+                    <div class="sensor">
+                        <img src="./trangchu/humi.png" alt="humi" class="img-sensor"> Độ ẩm
+                    </div>
+                    <p class="value" id="humidityValue">%</p>
+                </div>
+
+                <div class="metric-card light">
+                    <div class="sensor">
+                        <img src="./trangchu/light.png" alt="light" class="img-sensor"> Ánh sáng
+                    </div>
+                    <p class="value" id="lightValue">
+                        <span class="unit">Lux</span>
+                    </p>
+                </div>
+            </section>
+
+            <!-- Charts & Devices -->
+            <section class="main-widgets">
+                <div class="charts-container">
+                    <div class="chart-panel">
+                        <canvas id="mainCombinedChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="devices-panel">
+                    <h3>Thiết bị</h3>
+
+                    <!-- Đèn -->
+                    <div class="device-control" id="lightControl">
+                        <div class="device-content">
+                            <i class="device-icon light-icon" data-lucide="lightbulb"></i>
+                            <span>Đèn</span>
+                        </div>
+                        <div class="toggle-switch">
+                            <input type="checkbox" id="lightSwitch">
+                            <label for="lightSwitch"></label>
+                        </div>
+                    </div>
+
+                    <!-- Điều hòa -->
+                    <div class="device-control" id="acControl">
+                        <div class="device-content">
+                            <i class="device-icon ac-icon" data-lucide="snowflake"></i>
+                            <span>Điều hòa</span>
+                        </div>
+                        <div class="toggle-switch">
+                            <input type="checkbox" id="acSwitch">
+                            <label for="acSwitch"></label>
+                        </div>
+                    </div>
+
+                    <!-- Quạt -->
+                    <div class="device-control" id="fanControl">
+                        <div class="device-content">
+                            <i class="device-icon fan-icon" data-lucide="fan"></i>
+                            <span>Quạt</span>
+                        </div>
+                        <div class="toggle-switch">
+                            <input type="checkbox" id="fanSwitch">
+                            <label for="fanSwitch"></label>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="spinner"></div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/main.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>
