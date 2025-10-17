@@ -483,3 +483,89 @@ body {
         height: 20px;
     }
 }
+/* === LOADING STATES CHO THIẾT BỊ === */
+.device-control.loading {
+    position: relative;
+    pointer-events: none;
+}
+
+/* Tạo hiệu ứng loading bằng pseudo-element */
+.device-control.loading::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 20px;
+    height: 20px;
+    border: 2px solid transparent;
+    border-top: 2px solid var(--on-color);
+    border-radius: 50%;
+    animation: deviceSpin 1s linear infinite;
+    z-index: 10;
+}
+
+/* Mờ nội dung khi loading */
+.device-control.loading .device-content {
+    opacity: 0.3;
+}
+
+/* Ẩn toggle switch khi loading */
+.device-control.loading .toggle-switch {
+    opacity: 0.3;
+}
+
+/* Animation quay */
+@keyframes deviceSpin {
+    0% { transform: translate(-50%, -50%) rotate(0deg); }
+    100% { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+/* Hiệu ứng overlay mờ */
+.device-control.loading::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.8);
+    border-radius: 10px;
+    z-index: 5;
+}
+
+
+/* ESP32 Offline State */
+.esp32-offline .device-control {
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+.esp32-offline .device-control::after {
+    content: 'Offline';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    z-index: 15;
+}
+
+/* Responsive cho loading */
+@media (max-width: 768px) {
+    .device-control.loading::before {
+        width: 16px;
+        height: 16px;
+    }
+    
+    .toast-notification {
+        top: 10px;
+        right: 10px;
+        left: 10px;
+        max-width: none;
+    }
+}

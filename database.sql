@@ -27,3 +27,6 @@ FLUSH PRIVILEGES;
 SELECT * FROM sensor_data;
 
 ALTER TABLE sensor_data MODIFY COLUMN temperature FLOAT;
+ALTER TABLE sensor_data MODIFY COLUMN humidity integer;
+
+TRUNCATE TABLE device_history;

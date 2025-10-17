@@ -10,7 +10,7 @@ const nextBtn = document.getElementById('nextBtn');
 const pageNumbersDiv = document.getElementById('pageNumbers');
 const searchBox = document.getElementById('searchInput');
 const deviceFilterSelect = document.getElementById('deviceFilter');
-const sortFilterSelect = document.getElementById('sortFilter');
+const statusFilterSelect = document.getElementById('statusFilter');
 const applyBtn = document.getElementById('applyBtn');
 
 // Hàm chuyển đổi tên thiết bị từ tiếng Anh sang tiếng Việt
@@ -25,17 +25,7 @@ function convertDeviceName(device) {
 
 // Hàm xây dựng query params
 function buildQueryParams() {
-    let sortOrderValue = 'DESC'; // Mặc định
-    
-    if (sortFilterSelect.value === 'Thời gian mới nhất') {
-        sortOrderValue = 'DESC';
-    } else if (sortFilterSelect.value === 'Thời gian cũ nhất') {
-        sortOrderValue = 'ASC';
-    }
-
-    console.log('🔄 Sort conversion:', sortFilterSelect.value, '→', sortOrderValue);
-
-    // Chuyển đổi giá trị filter từ tiếng Việt sang tiếng Anh để gửi API
+    // Chuyển đổi giá trị filter thiết bị từ tiếng Việt sang tiếng Anh
     let deviceFilterValue = '';
     if (deviceFilterSelect.value === 'Quạt') {
         deviceFilterValue = 'fan';
@@ -44,24 +34,28 @@ function buildQueryParams() {
     } else if (deviceFilterSelect.value === 'Đèn') {
         deviceFilterValue = 'light';
     } else {
-        deviceFilterValue = ''; // Tất cả
+        deviceFilterValue = ''; // Tất cả thiết bị
     }
+
+    // Giá trị filter trạng thái
+    const statusFilterValue = statusFilterSelect.value;
 
     const params = {
         page: currentPage,
         limit: rowsPerPage,
         sortBy: 'timestamp',           
-        sortOrder: sortOrderValue,     
+        sortOrder: 'DESC',     
         search: searchBox.value.trim(),
-        deviceFilter: deviceFilterValue
+        deviceFilter: deviceFilterValue,
+        statusFilter: statusFilterValue
     };
 
-    console.log('🔍 Frontend Query Params:', params);
+    console.log('🔍 Query Params:', params);
     return new URLSearchParams(params).toString();
 }
 
 // Hàm áp dụng bộ lọc
-async function applyFilter(resetPage = false) {
+async function applyFilter(resetPage = true) {
     if (resetPage) currentPage = 1;
     rowsPerPage = parseInt(rowsPerPageSelect.value);
 
@@ -69,7 +63,7 @@ async function applyFilter(resetPage = false) {
         const queryString = buildQueryParams();
         const url = `/api/device_history?${queryString}`;
         
-        console.log('Fetching URL:', url);
+        console.log('📡 Fetching URL:', url);
         
         const res = await fetch(url);
         
@@ -79,14 +73,19 @@ async function applyFilter(resetPage = false) {
 
         const result = await res.json();
         
-        console.log('API Response - Total items:', result.totalItems, 'Total pages:', result.totalPages);
+        console.log('✅ API Response:', result);
         
-        totalPages = result.totalPages || 1;
-        renderTable(result.data);
-        renderPagination();
+        if (result && result.data) {
+            totalPages = result.totalPages || 1;
+            renderTable(result.data);
+            renderPagination();
+        } else {
+            throw new Error('Invalid response format');
+        }
+        
     } catch (err) {
-        console.error('Fetch Error:', err);
-        tableBody.innerHTML = '<tr><td colspan="4" style="color: red;">Không tải được dữ liệu: ' + err.message + '</td></tr>';
+        console.error('❌ Fetch Error:', err);
+        tableBody.innerHTML = '<tr><td colspan="4" style="color: red; text-align: center; padding: 20px;">Không tải được dữ liệu: ' + err.message + '</td></tr>';
     }
 }
 
@@ -97,22 +96,25 @@ function renderTable(data) {
     tableBody.innerHTML = '';
     
     if (!data || !data.length) {
-        tableBody.innerHTML = '<tr><td colspan="4">Không có dữ liệu.</td></tr>';
+        tableBody.innerHTML = `
+            <tr>
+                    Không có dữ liệu
+                
+            </tr>`;
         return;
     }
 
     data.forEach((item) => {
-        const date = new Date(item.timestamp).toLocaleString('en-EN');
+        const date = new Date(item.timestamp).toLocaleString('vi-VN');
         const deviceName = convertDeviceName(item.device);
-        const statusText = item.status === 'ON' ? 'ON' : 
-                          item.status === 'OFF' ? 'OFF' : 
-                          item.status || 'N/A';
+        const statusText = item.status === 'ON' ? 'ON' : 'OFF';
+        const statusClass = item.status === 'ON' ? 'status-on' : 'status-off';
         
         const row = `
             <tr>
                 <td>${item.id || '-'}</td>
                 <td>${deviceName}</td>
-                <td>${statusText}</td>
+                <td><span class="${statusClass}">${statusText}</span></td>
                 <td>${date}</td>
             </tr>`;
         tableBody.insertAdjacentHTML('beforeend', row);
@@ -125,29 +127,28 @@ function renderPagination() {
 
     console.log('🔢 Pagination - Current:', currentPage, 'Total:', totalPages);
 
+    // Cập nhật trạng thái nút Previous và Next
     prevBtn.disabled = currentPage <= 1;
     nextBtn.disabled = currentPage >= totalPages;
 
+    // Thêm class cho styling
+    prevBtn.className = 'pagination-btn';
+    nextBtn.className = 'pagination-btn';
+
     if (totalPages <= 1) {
+        pageNumbersDiv.innerHTML = '<span style="padding: 0 12px; color: #666;">Trang 1</span>';
         return;
     }
 
-    const pagesToShow = new Set();
-
-    pagesToShow.add(1);
-    if (totalPages >= 2) pagesToShow.add(2);
-
-    pagesToShow.add(currentPage);
-
-    if (totalPages >= 2) pagesToShow.add(totalPages - 1);
-    pagesToShow.add(totalPages);
-
-    if (currentPage > 1) pagesToShow.add(currentPage - 1);
-    if (currentPage < totalPages) pagesToShow.add(currentPage + 1);
+    const pagesToShow = new Set([1, totalPages, currentPage]);
+    
+    // Thêm các trang xung quanh trang hiện tại
+    for (let i = Math.max(1, currentPage - 1); i <= Math.min(totalPages, currentPage + 1); i++) {
+        pagesToShow.add(i);
+    }
 
     const sortedPages = Array.from(pagesToShow).sort((a, b) => a - b);
 
-    // Hiển thị các trang
     let prevPage = 0;
     sortedPages.forEach(page => {
         if (page - prevPage > 1) {
@@ -158,21 +159,25 @@ function renderPagination() {
             pageNumbersDiv.appendChild(ellipsis);
         }
 
-        // Thêm nút trang
+        // Tạo nút cho mỗi trang
         const btn = document.createElement('button');
         btn.innerText = page;
+        btn.className = 'pagination-btn';
+        
+        // Thêm class active cho trang hiện tại
         if (page === currentPage) {
             btn.classList.add('active');
-            btn.style.fontWeight = 'bold';
             btn.style.backgroundColor = '#007bff';
             btn.style.color = 'white';
+
         }
+        
         btn.addEventListener('click', () => {
             currentPage = page;
             applyFilter(false);
         });
+        
         pageNumbersDiv.appendChild(btn);
-
         prevPage = page;
     });
 }
@@ -180,38 +185,29 @@ function renderPagination() {
 // Event Listeners
 rowsPerPageSelect.addEventListener('change', () => {
     console.log('🔄 Rows per page changed to:', rowsPerPageSelect.value);
-    applyFilter(true); // Reset về trang 1
+    applyFilter(true);
 });
 
-// Tự động áp dụng khi chọn thiết bị
 deviceFilterSelect.addEventListener('change', () => {
     console.log('🔧 Device filter changed to:', deviceFilterSelect.value);
-    applyFilter(true); // Reset về trang 1
+    applyFilter(true);
 });
 
-// Tự động áp dụng khi chọn sắp xếp
-sortFilterSelect.addEventListener('change', () => {
-    console.log('📊 Sort filter changed to:', sortFilterSelect.value);
-    applyFilter(true); // Reset về trang 1
+statusFilterSelect.addEventListener('change', () => {
+    console.log('🔌 Status filter changed to:', statusFilterSelect.value);
+    applyFilter(true);
 });
 
-// Chỉ tìm kiếm khi ấn nút Áp dụng hoặc Enter
 applyBtn.addEventListener('click', () => {
-    console.log('🔍 Apply button clicked - Searching:', searchBox.value);
-    applyFilter(true); // Reset về trang 1
+    console.log('🔍 Search button clicked:', searchBox.value);
+    applyFilter(true);
 });
 
 searchBox.addEventListener('keypress', e => {
     if (e.key === 'Enter') {
-        console.log('🔍 Search enter pressed - Searching:', searchBox.value);
-        applyFilter(true); // Reset về trang 1
+        console.log('🔍 Search enter pressed:', searchBox.value);
+        applyFilter(true);
     }
-});
-
-// KHÔNG tự động tìm kiếm khi nhập - chỉ hiển thị gợi ý hoặc để trống
-searchBox.addEventListener('input', () => {
-    // Không làm gì cả - chỉ để người dùng nhập
-    console.log('⌨️ User typing:', searchBox.value);
 });
 
 prevBtn.addEventListener('click', () => {
@@ -232,6 +228,6 @@ nextBtn.addEventListener('click', () => {
 
 // Khởi chạy khi trang load
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('History page loaded, initializing...');
+    console.log('🚀 History page loaded, initializing...');
     applyFilter(true);
 });

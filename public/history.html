@@ -38,22 +38,27 @@
 
     <!-- Main content -->
     <main class="main-content">
-      <h1>Bảng dữ liệu</h1>
+      <h1>Lịch sử thiết bị</h1>
         
       <!-- Bộ lọc -->
       <div class="filter-container">
-        <input type="text" placeholder="Tìm kiếm" class="search-box" id="searchInput">
-        <button class="apply-btn" id="applyBtn">Tìm</button>
-        <select class="filter-select" id="deviceFilter">
-          <option value="Tất cả" selected>Tất cả</option>
-          <option value="Quạt">Quạt</option>
-          <option value="Điều hòa">Điều hòa</option>
-          <option value="Đèn">Đèn</option>
-        </select>
-        <select class="filter-select" id="sortFilter">
-          <option value="Thời gian mới nhất" selected>Thời gian mới nhất</option>
-          <option value="Thời gian cũ nhất">Thời gian cũ nhất</option>
-        </select>
+        <div class="search-section">
+          <input type="text" placeholder="Tìm kiếm" class="search-box" id="searchInput">
+          <button class="apply-btn" id="applyBtn">Tìm</button>
+        </div>
+        <div class="filter-section">
+          <select class="filter-select" id="deviceFilter">
+            <option value="">Tất cả thiết bị</option>
+            <option value="Quạt">Quạt</option>
+            <option value="Điều hòa">Điều hòa</option>
+            <option value="Đèn">Đèn</option>
+          </select>
+          <select class="filter-select" id="statusFilter">
+            <option value="">Tất cả trạng thái</option>
+            <option value="ON">ON</option>
+            <option value="OFF">OFF</option>
+          </select>
+        </div>
       </div>
 
       <!-- Bảng dữ liệu -->
@@ -71,19 +76,20 @@
           </tbody>
         </table>
       </div>
+
       <!-- Thanh chọn số lượng và phân trang -->
       <div class="pagination-container">
         <div class="rows-per-page">
-         <label for="rows-per-page">Hiển thị: </label>
-         <select id="rows-per-page" class="rows-select">
-          <option value="10" selected>10</option>
-          <option value="20">20</option>
-          <option value="30">30</option>
-          <option value="40">40</option>
-          <option value="50">50</option>
-        </select>
-        <span>dòng / trang</span>
-      </div>
+          <label for="rows-per-page">Hiển thị: </label>
+          <select id="rows-per-page" class="rows-select">
+            <option value="10" selected>10</option>
+            <option value="20">20</option>
+            <option value="30">30</option>
+            <option value="40">40</option>
+            <option value="50">50</option>
+          </select>
+          <span>dòng / trang</span>
+        </div>
         <div class="pagination">
           <button id="prevBtn">«</button>
           <div id="pageNumbers"></div> 

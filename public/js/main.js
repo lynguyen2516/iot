@@ -1,16 +1,12 @@
 document.addEventListener('DOMContentLoaded', () => {
     const socket = io();
-
-    // --- Tham chiếu DOM Elements ---
+    
     const tempValueEl = document.getElementById('temperatureValue');
     const humiValueEl = document.getElementById('humidityValue');
     const lightValueEl = document.getElementById('lightValue');
-
     const lightSwitch = document.getElementById('lightSwitch');
     const acSwitch = document.getElementById('acSwitch');
     const fanSwitch = document.getElementById('fanSwitch');
-
-    const loadingOverlay = document.getElementById('loadingOverlay');
 
     let mainCombinedChart;
     let pendingConfirmations = new Set();
@@ -21,7 +17,6 @@ document.addEventListener('DOMContentLoaded', () => {
         fan: 'OFF'
     };
 
-    // --- Cập nhật UI ---
     function updateMetricCards(data) {
         const { temperature, humidity, light_level } = data;
         
@@ -36,50 +31,60 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function updateDeviceUI(device, status) {
+    function updateDeviceUI(device, status, showLoading = false) {
         const targetSwitch = document.getElementById(`${device}Switch`);
         const controlPanel = document.getElementById(`${device}Control`);
 
         if (targetSwitch) {
             targetSwitch.checked = (status === 'ON');
-            targetSwitch.disabled = !esp32Online; // Chỉ disable khi ESP32 offline
-            pendingConfirmations.delete(device);
-        }
-        if (controlPanel) {
-            controlPanel.classList.toggle('is-on', status === 'ON');
+            targetSwitch.disabled = !esp32Online || pendingConfirmations.has(device);
         }
         
-        // Lưu trạng thái cuối cùng
+        if (controlPanel) {
+            controlPanel.classList.toggle('is-on', status === 'ON');
+            
+            if (showLoading || pendingConfirmations.has(device)) {
+                controlPanel.classList.add('loading');
+            } else {
+                controlPanel.classList.remove('loading');
+            }
+        }
+        
         lastKnownStates[device] = status;
     }
 
-    // --- Loading Overlay ---
-    function showLoading() {
-        if (loadingOverlay) loadingOverlay.classList.add('visible');
+    function resetAllDevicesToOff() {
+        updateDeviceUI('light', 'OFF');
+        updateDeviceUI('ac', 'OFF');
+        updateDeviceUI('fan', 'OFF');
+        
+        lastKnownStates.light = 'OFF';
+        lastKnownStates.ac = 'OFF';
+        lastKnownStates.fan = 'OFF';
     }
 
-    function hideLoading() {
-        if (loadingOverlay) loadingOverlay.classList.remove('visible');
-    }
-
-    // --- Cập nhật trạng thái ESP32 ---
     function updateESP32Status(online) {
         esp32Online = online;
         
-        // Cập nhật khả năng điều khiển của các nút
         [lightSwitch, acSwitch, fanSwitch].forEach(switchEl => {
             if (switchEl) {
-                switchEl.disabled = !online;
+                const deviceName = switchEl.id.replace('Switch', '');
+                switchEl.disabled = !online || pendingConfirmations.has(deviceName);
             }
         });
+
+        if (online) {
+            document.body.classList.remove('esp32-offline');
+        } else {
+            document.body.classList.add('esp32-offline');
+            resetAllDevicesToOff();
+        }
     }
 
-    // --- Fetch dữ liệu ban đầu ---
     async function fetchInitialData() {
-        showLoading();
         try {
             const response = await fetch('/api/dashboard_data');
-            if (!response.ok) throw new Error('Network response was not ok.');
+            if (!response.ok) throw new Error('Network response was not ok');
 
             const data = await response.json(); 
 
@@ -88,18 +93,15 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             if (data.devices) {
-                // Cập nhật UI và lưu trạng thái ban đầu
                 updateDeviceUI('light', data.devices.light);
                 updateDeviceUI('ac', data.devices.ac);
                 updateDeviceUI('fan', data.devices.fan);
                 
-                // Lưu trạng thái ban đầu
                 lastKnownStates.light = data.devices.light;
                 lastKnownStates.ac = data.devices.ac;
                 lastKnownStates.fan = data.devices.fan;
             }
 
-            // Cập nhật trạng thái ESP32
             if (data.esp32Online !== undefined) {
                 updateESP32Status(data.esp32Online);
             }
@@ -109,14 +111,11 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         } catch (error) {
             console.error('Failed to fetch initial data from API:', error);
-        } finally {
-            hideLoading();
         }
     }
 
     fetchInitialData();
 
-    // --- Khởi tạo biểu đồ ---
     function initializeCharts(initialData) {
         if (initialData.length === 0) return;
     
@@ -128,14 +127,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 hour: '2-digit', minute: '2-digit'
             })
         );
-        // Trích xuất các giá trị
-        const tempValues = dataForChart.map(d => d.temperature);
-        const humiValues = dataForChart.map(d => d.humidity);
-        const lightValues = dataForChart.map(d => d.light_level);
+        
+        const tempValues = dataForChart.map(d => d.temperature || 0);
+        const humiValues = dataForChart.map(d => d.humidity || 0);
+        const lightValues = dataForChart.map(d => d.light_level || 0);
     
-        const ctx = document.getElementById('mainCombinedChart').getContext('2d');
+        const ctx = document.getElementById('mainCombinedChart');
+        if (!ctx) return;
+
+        if (mainCombinedChart) {
+            mainCombinedChart.destroy();
+        }
     
-        mainCombinedChart = new Chart(ctx, {
+        mainCombinedChart = new Chart(ctx.getContext('2d'), {
             type: 'line',
             data: {
                 labels: labels,
@@ -144,59 +148,64 @@ document.addEventListener('DOMContentLoaded', () => {
                         label: 'Nhiệt độ (°C)',
                         data: tempValues,
                         borderColor: 'rgb(255, 99, 132)',
-                        backgroundColor: 'rgba(255, 99, 132, 0.5)',
-                        yAxisID: 'yCommon', 
-                        tension: 0.2,
-                        pointRadius: 3
+                        backgroundColor: 'rgba(255, 99, 132, 0.1)',
+                        yAxisID: 'y',
+                        tension: 0.4,
+                        pointRadius: 3,
+                        borderWidth: 2
                     },
                     {
                         label: 'Độ ẩm (%)',
                         data: humiValues,
                         borderColor: 'rgb(54, 162, 235)',
-                        backgroundColor: 'rgba(54, 162, 235, 0.5)',
-                        yAxisID: 'yCommon', 
-                        tension: 0.2,
-                        pointRadius: 3
+                        backgroundColor: 'rgba(54, 162, 235, 0.1)',
+                        yAxisID: 'y',
+                        tension: 0.4,
+                        pointRadius: 3,
+                        borderWidth: 2
                     },
                     {
                         label: 'Ánh sáng (Lux)',
                         data: lightValues,
                         borderColor: 'rgb(255, 205, 86)',
-                        backgroundColor: 'rgba(255, 205, 86, 0.5)',
-                        yAxisID: 'yCommon',
-                        tension: 0.2,
-                        pointRadius: 3
+                        backgroundColor: 'rgba(255, 205, 86, 0.1)',
+                        yAxisID: 'y1',
+                        tension: 0.4,
+                        pointRadius: 3,
+                        borderWidth: 2
                     }
                 ]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                interaction: { mode: 'index', intersect: false },
                 scales: {
                     x: {
-                        title: {
-                            display: true,
-                            text: 'Thời gian'
-                        }
+                        title: { display: true, text: 'Thời gian' },
+                        grid: { display: false }
                     },
-                    yCommon: { 
+                    y: {
                         type: 'linear',
                         display: true,
                         position: 'left',
-                        title: {
-                            display: true,
-                            text: 'Giá trị cảm biến' 
-                        },
-                        grid: {
-                            drawOnChartArea: true
-                        },
+                        title: { display: true, text: 'Nhiệt độ (°C) & Độ ẩm (%)' },
+                        min: 0,
+                        max: 100
                     },
+                    y1: {
+                        type: 'linear',
+                        display: true,
+                        position: 'right',
+                        title: { display: true, text: 'Ánh sáng (Lux)' },
+                        min: 0,
+                        grid: { drawOnChartArea: false }
+                    }
                 }
             }
         });
     }
 
-    // --- Cập nhật biểu đồ theo thời gian thực ---
     function updateCharts(newData) {
         if (!mainCombinedChart) return;
 
@@ -205,13 +214,11 @@ document.addEventListener('DOMContentLoaded', () => {
             hour: '2-digit', minute: '2-digit'
         });
 
-        // Thêm điểm dữ liệu mới
         mainCombinedChart.data.labels.push(now);
-        mainCombinedChart.data.datasets[0].data.push(newData.temperature);
-        mainCombinedChart.data.datasets[1].data.push(newData.humidity);
-        mainCombinedChart.data.datasets[2].data.push(newData.light_level);
+        mainCombinedChart.data.datasets[0].data.push(newData.temperature || 0);
+        mainCombinedChart.data.datasets[1].data.push(newData.humidity || 0);
+        mainCombinedChart.data.datasets[2].data.push(newData.light_level || 0);
 
-        // Xóa điểm dữ liệu cũ nhất nếu vượt quá giới hạn
         if (mainCombinedChart.data.labels.length > MAX_DATA_POINTS) {
             mainCombinedChart.data.labels.shift();
             mainCombinedChart.data.datasets.forEach(dataset => dataset.data.shift());
@@ -219,71 +226,42 @@ document.addEventListener('DOMContentLoaded', () => {
 
         mainCombinedChart.update('none');
     }
-    
 
-    // --- Lắng nghe sự kiện Socket.IO ---
     socket.on('sensor_update', (data) => {
-        // Cập nhật Card và Biểu đồ khi có dữ liệu cảm biến mới
         updateMetricCards(data);
         updateCharts(data);
     });
 
     socket.on('device_status_confirmed', (data) => {
-        // QUAN TRỌNG: Chờ đèn sáng hoàn toàn rồi mới cập nhật UI
-        console.log(`✅ Device status confirmed: ${data.device} is ${data.status}`);
-        
-        // Thêm delay để đèn sáng hoàn toàn trước khi cập nhật UI
-        setTimeout(() => {
-            // Cập nhật UI với trạng thái mới (đèn đã sáng/tắt hoàn toàn)
-            updateDeviceUI(data.device, data.status);
-            
-            // Ẩn loading
-            hideLoading();
-            
-            console.log(`💡 ${data.device} completed: UI updated`);
-        }, 500); // Delay 0.5 giây - đủ để đèn sáng hoàn toàn
+        pendingConfirmations.delete(data.device);
+        updateDeviceUI(data.device, data.status, false);
     });
 
     socket.on('device_control_error', (data) => {
-        // Xử lý lỗi từ backend
-        console.error(`Device control error: ${data.device} - ${data.error}`);
-        
-        // Khôi phục trạng thái nút về trạng thái cuối cùng
-        const targetSwitch = document.getElementById(`${data.device}Switch`);
-        if (targetSwitch) {
-            targetSwitch.checked = (lastKnownStates[data.device] === 'ON');
-            targetSwitch.disabled = false;
-        }
-        
-        hideLoading();
+        pendingConfirmations.delete(data.device);
+        updateDeviceUI(data.device, lastKnownStates[data.device], false);
     });
 
     socket.on('esp32_disconnected', () => {
-        console.log('ESP32 disconnected');
         updateESP32Status(false);
+        pendingConfirmations.clear();
+        resetAllDevicesToOff();
     });
 
     socket.on('esp32_connected', () => {
-        console.log('ESP32 reconnected');
         updateESP32Status(true);
-        
-        // Refresh data để lấy trạng thái mới nhất
+        pendingConfirmations.clear();
         fetchInitialData();
     });
 
-    // Nhận trạng thái hiện tại khi kết nối
     socket.on('current_states', (data) => {
-        console.log('Received current states from server:', data);
-        
         if (data.devices) {
-            updateDeviceUI('light', data.devices.light);
-            updateDeviceUI('ac', data.devices.ac);
-            updateDeviceUI('fan', data.devices.fan);
-            
-            // Lưu trạng thái
-            lastKnownStates.light = data.devices.light;
-            lastKnownStates.ac = data.devices.ac;
-            lastKnownStates.fan = data.devices.fan;
+            Object.keys(data.devices).forEach(device => {
+                if (!pendingConfirmations.has(device)) {
+                    updateDeviceUI(device, data.devices[device], false);
+                    lastKnownStates[device] = data.devices[device];
+                }
+            });
         }
         
         if (data.esp32Online !== undefined) {
@@ -291,89 +269,34 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // --- Gửi lệnh điều khiển ---
-    [lightSwitch, acSwitch, fanSwitch].forEach(toggle => {
-        if (toggle) {
-            toggle.addEventListener('change', (event) => {
-                const desiredState = event.target.checked;
-                const deviceName = toggle.id.replace('Switch', '');
-                
-                console.log(` Switch clicked: ${deviceName}, desired state: ${desiredState}`);
+    function setupDeviceControl(switchElement) {
+        if (!switchElement) return;
 
-                // KIỂM TRA ESP32 CÓ ONLINE KHÔNG
-                if (!esp32Online) {
-                    console.log('ESP32 offline, cannot control device');
-                    // KHÔI PHỤC trạng thái nút về trạng thái cuối cùng
-                    event.target.checked = (lastKnownStates[deviceName] === 'ON');
-                    return;
-                }
+        switchElement.addEventListener('change', (event) => {
+            const deviceName = switchElement.id.replace('Switch', '');
+            const desiredStatus = event.target.checked ? 'ON' : 'OFF';
 
-                // KIỂM TRA NẾU ĐANG CHỜ XÁC NHẬN
-                if (pendingConfirmations.has(deviceName)) {
-                    console.log(`Waiting for confirmation from ${deviceName}, ignoring duplicate command`);
-                    // KHÔI PHỤC trạng thái nút về trạng thái cuối cùng
-                    event.target.checked = (lastKnownStates[deviceName] === 'ON');
-                    return;
-                }
+            event.target.checked = !event.target.checked;
 
-                const newStatus = desiredState ? 'ON' : 'OFF';
+            if (!esp32Online) return;
+            if (pendingConfirmations.has(deviceName)) return;
 
-                console.log(`Desired state: ${deviceName} -> ${newStatus}`);
+            pendingConfirmations.add(deviceName);
+            updateDeviceUI(deviceName, lastKnownStates[deviceName], true);
 
-                // THÊM VÀO DANH SÁCH CHỜ XÁC NHẬN
-                pendingConfirmations.add(deviceName);
-                
-                // Hiển thị loading
-                showLoading();
-                
-                // Vô hiệu hóa nút trong khi chờ
-                toggle.disabled = true;
-
-                // Gửi lệnh đến server
-                socket.emit('device_control', {
-                    device: deviceName,
-                    status: newStatus
-                });
-
-                console.log(`Sent control command: ${deviceName} -> ${newStatus}`);
-
-                // THÊM TIMEOUT ĐỂ TRÁNH TREO 
-                setTimeout(() => {
-                    if (pendingConfirmations.has(deviceName)) {
-                        console.warn(`Timeout waiting for confirmation from ${deviceName}`);
-                        pendingConfirmations.delete(deviceName);
-                        
-                        // KHÔI PHỤC trạng thái nút về trạng thái cuối cùng
-                        toggle.checked = (lastKnownStates[deviceName] === 'ON');
-                        toggle.disabled = false;
-                        hideLoading();
-                        
-                        console.log(`${deviceName} switch restored to last known state: ${lastKnownStates[deviceName]}`);
-                    }
-                }, 6000); // Timeout 6 giây
+            socket.emit('device_control', {
+                device: deviceName,
+                status: desiredStatus
             });
-        }
-    });
 
-    // --- Khởi tạo ứng dụng ---
-    function initApp() {
-        console.log(' Initializing IoT Dashboard...');
-        
-        // Thêm CSS animation cho loading nếu cần
-        if (!document.querySelector('#notificationStyles')) {
-            const style = document.createElement('style');
-            style.id = 'notificationStyles';
-            style.textContent = `
-                @keyframes spin {
-                    to {
-                        transform: rotate(360deg);
-                    }
+            setTimeout(() => {
+                if (pendingConfirmations.has(deviceName)) {
+                    pendingConfirmations.delete(deviceName);
+                    updateDeviceUI(deviceName, lastKnownStates[deviceName], false);
                 }
-            `;
-            document.head.appendChild(style);
-        }
+            }, 5000);
+        });
     }
 
-    // --- Bắt đầu ứng dụng ---
-    initApp();
+    [lightSwitch, acSwitch, fanSwitch].forEach(setupDeviceControl);
 });

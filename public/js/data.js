@@ -15,8 +15,6 @@ const applyBtn = document.getElementById('applyBtn');
 const firstPageBtn = document.getElementById('firstPageBtn'); 
 const lastPageBtn = document.getElementById('lastPageBtn'); 
 
-// Real-time connection
-const socket = io(); 
 
 function buildQueryParams() {
     let autoSortBy = 'timestamp'; 
@@ -29,7 +27,6 @@ function buildQueryParams() {
         autoSortBy = 'humidity';
     }
 
-    // Chuyển đổi từ tiếng Việt sang tham số API
     let selectedSortOrder = 'desc'; 
     
     if (sortOrderSelect.value === 'Tăng dần') {
@@ -38,13 +35,11 @@ function buildQueryParams() {
         selectedSortOrder = 'desc';
     }
     
-    // Xử lý bộ lọc - chỉ gửi nếu không phải "Tất cả"
     let filterType = '';
     if (filterSelect.value !== 'Tất cả') {
         filterType = filterSelect.value;
     }
 
-    // Tạo object parameters cho API
     const params = {
         page: currentPage,
         limit: rowsPerPage,
@@ -163,14 +158,8 @@ function renderPagination() {
     });
 }
 
-// Nhận dữ liệu real-time từ server
-socket.on('sensor_update', () => {
-    if (currentPage === 1 && filterSelect.value === 'Tất cả' && !searchBox.value) {
-        applyFilter(false);
-    }
-});
 
-// Event listeners - SỬA LẠI ĐỂ TỰ ĐỘNG ÁP DỤNG
+// Event listeners
 rowsPerPageSelect.addEventListener('change', () => applyFilter(true)); // Reset trang khi đổi số dòng
 
 // Tự động áp dụng khi chọn lọc
@@ -198,10 +187,8 @@ searchBox.addEventListener('keypress', e => {
     }
 });
 
-// KHÔNG tự động tìm kiếm khi nhập - chỉ để người dùng nhập
 searchBox.addEventListener('input', () => {
     console.log('⌨️ User typing:', searchBox.value);
-    // Không làm gì cả - chỉ để người dùng nhập
 });
 
 prevBtn.addEventListener('click', () => { 
@@ -218,7 +205,7 @@ nextBtn.addEventListener('click', () => {
     }
 });
 
-// Navigation đến trang đầu/cuối
+
 if (firstPageBtn) firstPageBtn.addEventListener('click', () => { 
     currentPage = 1; 
     applyFilter(false); 
@@ -232,4 +219,4 @@ if (lastPageBtn) lastPageBtn.addEventListener('click', () => {
 document.addEventListener('DOMContentLoaded', () => {
     console.log('Data page loaded, initializing...');
     applyFilter(true);
-});
+}); 
