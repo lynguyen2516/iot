@@ -170,22 +170,20 @@ class DatabaseHandler {
         return { conditions, params };
     }
 
-    async getSensorDataPaged(page = 1, limit = 10, search = '', filterType = '', sortBy = 'timestamp', sortOrder = 'DESC') {
+async getSensorDataPaged(page = 1, limit = 10, search = '', filterType = '', sortBy = 'timestamp', sortOrder = 'DESC') {
         if (!this.connection) throw new Error("Database not connected.");
        
         try {
             page = parseInt(page, 10) || 1;
             limit = parseInt(limit, 10) || 10;
             const offset = (page - 1) * limit;
-
+    
             let whereConditions = [];
             let queryParams = [];
-
-            // Xác định cột sắp xếp mặc định theo filterType
+    
             let defaultSortBy = 'timestamp';
             let defaultSortOrder = 'DESC';
-
-            // QUAN TRỌNG: Nếu có filterType cụ thể, ƯU TIÊN sắp xếp theo filterType đó
+    
             if (filterType && filterType !== 'Tất cả') {
                 if (filterType === 'Nhiệt độ') {
                     defaultSortBy = 'temperature';
@@ -195,14 +193,15 @@ class DatabaseHandler {
                     defaultSortBy = 'humidity';
                 }
             }
-
+    
             // Xác định cột sắp xếp an toàn
             const validSortColumns = ['temperature', 'light_level', 'humidity', 'timestamp'];
             const safeSortBy = validSortColumns.includes(sortBy) ? sortBy : defaultSortBy;
             const safeSortOrder = ['ASC', 'DESC'].includes(sortOrder.toUpperCase()) ? sortOrder.toUpperCase() : defaultSortOrder;
-
+    
             // Lọc theo loại cảm biến
-            if (filterType && filterType !== 'Tất cả') {
+            const hasSpecificFilter = filterType && filterType !== 'Tất cả';
+            if (hasSpecificFilter) {
                 if (filterType === 'Nhiệt độ') {
                     whereConditions.push('temperature IS NOT NULL');
                 } else if (filterType === 'Ánh sáng') {
@@ -211,48 +210,52 @@ class DatabaseHandler {
                     whereConditions.push('humidity IS NOT NULL');
                 }
             }
-
+    
             // Xử lý tìm kiếm
             if (search && search.trim() !== '') {
                 const searchTerm = search.trim();
-                const hasSpecificFilter = filterType && filterType !== 'Tất cả';
                 const isTimeSearch = searchTerm.includes(':') || searchTerm.includes('/');
-               
-                if (!hasSpecificFilter) {
-                    if (isTimeSearch) {
-                        const timeSearch = this.processTimeSearch(searchTerm);
-                        whereConditions.push(...timeSearch.conditions);
-                        queryParams.push(...timeSearch.params);
-                    } else {
-                        const numericSearch = parseFloat(searchTerm);
-                        
-                        if (!isNaN(numericSearch)) {
-                            const numericConditions = [];
-                            
+    
+                // Nếu đang lọc theo loại cảm biến cụ thể, KHÔNG cho phép tìm kiếm theo thời gian
+                if (hasSpecificFilter && isTimeSearch) {
+                    // Bỏ qua tìm kiếm thời gian khi có filter cụ thể
+                    // Chỉ cho phép tìm kiếm số
+                    const numericSearch = parseFloat(searchTerm);
+                    if (!isNaN(numericSearch)) {
+                        if (filterType === 'Nhiệt độ') {
                             if (searchTerm.includes('.')) {
-                                numericConditions.push('ROUND(temperature, 1) = ROUND(?, 1)');
+                                whereConditions.push('ROUND(temperature, 1) = ROUND(?, 1)');
                             } else {
-                                numericConditions.push('temperature = ?');
+                                whereConditions.push('temperature = ?');
                             }
-                            
-                            numericConditions.push('light_level = ?');
-                            numericConditions.push('humidity = ?');
-                            
-                            whereConditions.push(`(${numericConditions.join(' OR ')})`);
-                            queryParams.push(numericSearch, numericSearch, numericSearch);
-                        } else {
-                            whereConditions.push('CAST(timestamp AS CHAR) LIKE ?');
-                            queryParams.push(`%${searchTerm}%`);
+                            queryParams.push(numericSearch);
+                        } else if (filterType === 'Ánh sáng') {
+                            whereConditions.push('light_level = ?');
+                            queryParams.push(numericSearch);
+                        } else if (filterType === 'Độ ẩm') {
+                            whereConditions.push('humidity = ?');
+                            queryParams.push(numericSearch);
                         }
                     }
-                } else {
-                    if (isTimeSearch) {
-                        const timeSearch = this.processTimeSearch(searchTerm);
-                        whereConditions.push(...timeSearch.conditions);
-                        queryParams.push(...timeSearch.params);
-                    } else {
-                        const numericSearch = parseFloat(searchTerm);
-                        if (!isNaN(numericSearch)) {
+                    // Nếu không phải số, bỏ qua tìm kiếm
+                } 
+                else if (!hasSpecificFilter && isTimeSearch) {
+                    // Chỉ cho phép tìm kiếm thời gian khi không có filter cụ thể
+                    const timeSearch = this.processTimeSearch(searchTerm);
+                    whereConditions.push(...timeSearch.conditions);
+                    queryParams.push(...timeSearch.params);
+                }
+                else if (isTimeSearch) {
+                    // Trường hợp có filter cụ thể + thời gian -> bỏ qua thời gian
+                    // Không thêm điều kiện nào
+                }
+                else {
+                    // Tìm kiếm số hoặc text thông thường
+                    const numericSearch = parseFloat(searchTerm);
+                    
+                    if (!isNaN(numericSearch)) {
+                        if (hasSpecificFilter) {
+                            // Nếu có filter cụ thể, chỉ tìm trên cột đó
                             if (filterType === 'Nhiệt độ') {
                                 if (searchTerm.includes('.')) {
                                     whereConditions.push('ROUND(temperature, 1) = ROUND(?, 1)');
@@ -268,20 +271,39 @@ class DatabaseHandler {
                                 queryParams.push(numericSearch);
                             }
                         } else {
+                            // Nếu không có filter cụ thể, tìm trên tất cả các cột số
+                            const numericConditions = [];
+                            
+                            if (searchTerm.includes('.')) {
+                                numericConditions.push('ROUND(temperature, 1) = ROUND(?, 1)');
+                            } else {
+                                numericConditions.push('temperature = ?');
+                            }
+                            
+                            numericConditions.push('light_level = ?');
+                            numericConditions.push('humidity = ?');
+                            
+                            whereConditions.push(`(${numericConditions.join(' OR ')})`);
+                            queryParams.push(numericSearch, numericSearch, numericSearch);
+                        }
+                    } else {
+                        // Tìm kiếm text (chỉ cho phép trên timestamp khi không có filter cụ thể)
+                        if (!hasSpecificFilter) {
                             whereConditions.push('CAST(timestamp AS CHAR) LIKE ?');
                             queryParams.push(`%${searchTerm}%`);
                         }
+                        // Nếu có filter cụ thể và search là text, bỏ qua
                     }
                 }
             }
-
+    
             const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
-
+    
             let countQuery = `SELECT COUNT(*) as total FROM sensor_data ${whereClause}`;
             const [countResult] = await this.connection.execute(countQuery, queryParams);
             const totalItems = countResult[0].total;
             const totalPages = Math.ceil(totalItems / limit);
-
+    
             let dataQuery = `
                 SELECT
                     id,
@@ -296,7 +318,7 @@ class DatabaseHandler {
             `;
            
             const [rows] = await this.connection.execute(dataQuery, queryParams);
-
+    
             return {
                 data: rows,
                 totalItems,
@@ -305,7 +327,7 @@ class DatabaseHandler {
                 sortBy: safeSortBy,
                 sortOrder: safeSortOrder
             };
-
+    
         } catch (err) {
             console.error("❌ Error fetching sensor data:", err);
             throw err;

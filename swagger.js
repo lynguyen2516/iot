@@ -24,7 +24,7 @@ const options = {
       '/api/dashboard_data': {
         get: {
           summary: 'Lấy dữ liệu dashboard tổng quan',
-          description: 'Trả về dữ liệu tổng quan cho dashboard bao gồm trạng thái thiết bị và trạng thái ESP32',
+          description: 'Trả về dữ liệu tổng quan cho dashboard bao gồm trạng thái thiết bị, trạng thái ESP32 và dữ liệu biểu đồ',
           tags: ['Dashboard'],
           responses: {
             '200': {
@@ -59,15 +59,15 @@ const options = {
                           nhiet_do: {
                             type: 'number',
                             format: 'float',
-                            example: 29.4
+                            example: 24.4
                           },
                           anh_sang: {
                             type: 'integer',
-                            example: 1225
+                            example: 1677
                           },
                           do_am: {
                             type: 'integer',
-                            example: 68
+                            example: 52
                           }
                         }
                       },
@@ -145,7 +145,7 @@ const options = {
               required: false,
               schema: {
                 type: 'string',
-                enum: ['temperature', 'light', 'humidity']
+                enum: ['temperature', 'light_level', 'humidity']
               }
             },
             {
@@ -155,7 +155,7 @@ const options = {
               required: false,
               schema: {
                 type: 'string',
-                enum: ['timestamp', 'temperature', 'light', 'humidity'],
+                enum: ['timestamp', 'temperature', 'light_level', 'humidity'],
                 default: 'timestamp'
               }
             },
@@ -191,40 +191,40 @@ const options = {
                             id: {
                               type: 'integer',
                               description: 'ID bản ghi',
-                              example: 1279
+                              example: 1337
                             },
                             temperature: {
                               type: 'number',
                               format: 'float',
                               description: 'Nhiệt độ (°C)',
-                              example: 29.4
+                              example: 24.4
                             },
-                            light: {
+                            light_level: {
                               type: 'integer',
                               description: 'Ánh sáng (Lux)',
-                              example: 1225
+                              example: 1677
                             },
                             humidity: {
                               type: 'integer',
                               description: 'Độ ẩm (%)',
-                              example: 68
+                              example: 52
                             },
                             timestamp: {
                               type: 'string',
                               format: 'date-time',
                               description: 'Thời gian ghi nhận',
-                              example: '2025-10-17T03:10:53.000Z'
+                              example: '2025-10-17T08:01:00.000Z'
                             }
                           }
                         }
                       },
                       totalItems: {
                         type: 'integer',
-                        example: 1279
+                        example: 1337
                       },
                       totalPages: {
                         type: 'integer',
-                        example: 128
+                        example: 134
                       },
                       currentPage: {
                         type: 'integer',
@@ -321,7 +321,7 @@ const options = {
               required: false,
               schema: {
                 type: 'string',
-                enum: ['Đèn', 'Quạt', 'Điều hòa', '']
+                enum: ['light', 'fan', 'ac'] 
               }
             },
             {
