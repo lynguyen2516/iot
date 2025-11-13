@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thống Kê Hệ Thống IoT</title>
+    <link rel="stylesheet" href="css/thongke.css">
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <img src="./profile/logo.png" alt="logo" class="logo">
+                <span>My Home Web</span>
+            </div>
+
+            <nav class="sidebar-nav">
+                <ul>
+                    <li class="nav-item">
+                        <img src="./profile/trangchu.png" alt="trangchu" class="menu-img home">
+                        <a href="main.html">Trang chủ</a>
+                    </li>
+                    <li class="nav-item">
+                        <img src="./profile/dulieu.png" alt="dulieu" class="menu-img data">
+                        <a href="data.html">Dữ liệu</a>
+                    </li>
+                    <li class="nav-item">
+                        <img src="./profile/lichsu.png" alt="lichsu" class="menu-img history">
+                        <a href="history.html">Lịch sử</a>
+                    </li>
+                    <li class="nav-item">
+                        <img src="./profile/hoso.png" alt="hoso" class="menu-img profile">
+                        <a href="profile.html">Hồ sơ</a>
+                    </li>
+                    <li class="nav-item active">
+                        <img src="./profile/thongke.png" alt="thongke" class="menu-img stats">
+                        <a href="thongke.html">Thống kê</a>
+                    </li>
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="stats-container">
+                <div class="stats-header">
+                    <h1>Thống Kê Hệ Thống IoT</h1>
+                    <p>Thống kê số lượt vượt ngưỡng cảm biến và số lượt bật thiết bị</p>
+                </div>
+
+                <div class="date-filter">
+                    <div class="filter-group">
+                        <label for="selectedDate">Chọn ngày:</label>
+                        <input type="date" id="selectedDate">
+                    </div>
+                    
+                    <div class="filter-actions">
+                        <button class="btn-primary" onclick="loadStatistics()">Tải thống kê</button>
+                        <button class="btn-secondary" onclick="resetDate()">Hôm nay</button>
+                    </div>
+                </div>
+
+
+                <!-- Thống kê cảm biến vượt ngưỡng -->
+                <div class="stats-section">
+                    <h2>Thống Kê Cảm Biến Vượt Ngưỡng</h2>
+                    <div id="sensorStats">
+                        <div class="loading">Đang tải dữ liệu...</div>
+                    </div>
+                </div>
+
+                <!-- Thống kê thiết bị -->
+                <div class="stats-section">
+                    <h2>Thống Kê Số Lượt Bật Thiết Bị</h2>
+                    <div id="deviceStats">
+                        <div class="loading">Đang tải dữ liệu...</div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="js/stats.js"></script>
+</body>
+</html>

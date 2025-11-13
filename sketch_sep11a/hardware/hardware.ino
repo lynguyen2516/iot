@@ -14,7 +14,7 @@ const int MAX_ESTIMATED_LUX = 2000;
 
 const char* ssid = "iPhone (52)";
 const char* password = "12345678";
-const char* mqtt_server = "172.20.10.2";
+const char* mqtt_server = "172.20.10.3";
 const int mqtt_port = 1883;
 const char* mqtt_user = "esp32";
 const char* mqtt_pass = "1234567";

@@ -86,5 +86,81 @@ router.get('/sensor_data', async (req, res) => {
       });
     }
   });
+// Thêm các routes sau vào file apiHandler.js
+// Route thống kê cảm biến vượt ngưỡng
+router.get('/sensor_stats', async (req, res) => {
+  try {
+      const { startDate, endDate } = req.query;
+      
+      if (!startDate || !endDate) {
+          return res.status(400).json({
+              success: false,
+              error: 'Missing startDate or endDate parameters'
+          });
+      }
 
+      const result = await databaseHandler.getSensorStatistics(startDate, endDate);
+      
+      // SỬA: Đảm bảo response có structure đúng
+      res.json({
+          success: true,
+          data: result,
+          period: { startDate, endDate }
+      });
+      
+  } catch (error) {
+      console.error('Error in /api/sensor_stats:', error);
+      res.status(500).json({
+          success: false,
+          error: 'Internal server error',
+          message: error.message
+      });
+  }
+});
+// ---------- SENSOR STATS ----------
+router.get('/sensor_stats', async (req, res) => {
+  try {
+      const { date, startDate, endDate } = req.query;
+
+      // Ưu tiên: nếu chỉ có `date` → start = end = date
+      const start = date || startDate;
+      const end   = date || endDate || start;   // fallback
+
+      if (!start || !end) {
+          return res.status(400).json({
+              success: false,
+              error: 'Thiếu tham số ngày (date hoặc startDate/endDate)'
+          });
+      }
+
+      const result = await databaseHandler.getSensorStatistics(start, end);
+      res.json({ success: true, data: result, period: { startDate: start, endDate: end } });
+  } catch (e) {
+      console.error('Error /api/sensor_stats:', e);
+      res.status(500).json({ success: false, error: 'Internal server error', message: e.message });
+  }
+});
+
+// ---------- DEVICE STATS ----------
+router.get('/device_stats', async (req, res) => {
+  try {
+      const { date, startDate, endDate } = req.query;
+
+      const start = date || startDate;
+      const end   = date || endDate || start;
+
+      if (!start || !end) {
+          return res.status(400).json({
+              success: false,
+              error: 'Thiếu tham số ngày (date hoặc startDate/endDate)'
+          });
+      }
+
+      const result = await databaseHandler.getDeviceStatistics(start, end);
+      res.json({ success: true, data: result, period: { startDate: start, endDate: end } });
+  } catch (e) {
+      console.error('Error /api/device_stats:', e);
+      res.status(500).json({ success: false, error: 'Internal server error', message: e.message });
+  }
+});
   module.exports = router;

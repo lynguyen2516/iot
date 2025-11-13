@@ -43,10 +43,10 @@ class DatabaseHandler {
     async executeQuery(query, params = []) {
         try {
             const connection = await this.getConnection();
-            const [result] = await connection.execute(query, params);
-            return result;
+            const [rows, fields] = await connection.execute(query, params); // ĐÚNG
+            return [rows, fields]; // Trả về cả rows và fields
         } catch (error) {
-            console.error('❌ Database query error:', error);
+            console.error('Database query error:', error);
             throw error;
         }
     }
@@ -170,20 +170,22 @@ class DatabaseHandler {
         return { conditions, params };
     }
 
-async getSensorDataPaged(page = 1, limit = 10, search = '', filterType = '', sortBy = 'timestamp', sortOrder = 'DESC') {
+    async getSensorDataPaged(page = 1, limit = 10, search = '', filterType = '', sortBy = 'timestamp', sortOrder = 'DESC') {
         if (!this.connection) throw new Error("Database not connected.");
        
         try {
             page = parseInt(page, 10) || 1;
             limit = parseInt(limit, 10) || 10;
             const offset = (page - 1) * limit;
-    
+
             let whereConditions = [];
             let queryParams = [];
-    
+
+            // Xác định cột sắp xếp mặc định theo filterType
             let defaultSortBy = 'timestamp';
             let defaultSortOrder = 'DESC';
-    
+
+            // QUAN TRỌNG: Nếu có filterType cụ thể, ƯU TIÊN sắp xếp theo filterType đó
             if (filterType && filterType !== 'Tất cả') {
                 if (filterType === 'Nhiệt độ') {
                     defaultSortBy = 'temperature';
@@ -193,15 +195,14 @@ async getSensorDataPaged(page = 1, limit = 10, search = '', filterType = '', sor
                     defaultSortBy = 'humidity';
                 }
             }
-    
+
             // Xác định cột sắp xếp an toàn
             const validSortColumns = ['temperature', 'light_level', 'humidity', 'timestamp'];
             const safeSortBy = validSortColumns.includes(sortBy) ? sortBy : defaultSortBy;
             const safeSortOrder = ['ASC', 'DESC'].includes(sortOrder.toUpperCase()) ? sortOrder.toUpperCase() : defaultSortOrder;
-    
+
             // Lọc theo loại cảm biến
-            const hasSpecificFilter = filterType && filterType !== 'Tất cả';
-            if (hasSpecificFilter) {
+            if (filterType && filterType !== 'Tất cả') {
                 if (filterType === 'Nhiệt độ') {
                     whereConditions.push('temperature IS NOT NULL');
                 } else if (filterType === 'Ánh sáng') {
@@ -210,52 +211,48 @@ async getSensorDataPaged(page = 1, limit = 10, search = '', filterType = '', sor
                     whereConditions.push('humidity IS NOT NULL');
                 }
             }
-    
+
             // Xử lý tìm kiếm
             if (search && search.trim() !== '') {
                 const searchTerm = search.trim();
+                const hasSpecificFilter = filterType && filterType !== 'Tất cả';
                 const isTimeSearch = searchTerm.includes(':') || searchTerm.includes('/');
-    
-                // Nếu đang lọc theo loại cảm biến cụ thể, KHÔNG cho phép tìm kiếm theo thời gian
-                if (hasSpecificFilter && isTimeSearch) {
-                    // Bỏ qua tìm kiếm thời gian khi có filter cụ thể
-                    // Chỉ cho phép tìm kiếm số
-                    const numericSearch = parseFloat(searchTerm);
-                    if (!isNaN(numericSearch)) {
-                        if (filterType === 'Nhiệt độ') {
+               
+                if (!hasSpecificFilter) {
+                    if (isTimeSearch) {
+                        const timeSearch = this.processTimeSearch(searchTerm);
+                        whereConditions.push(...timeSearch.conditions);
+                        queryParams.push(...timeSearch.params);
+                    } else {
+                        const numericSearch = parseFloat(searchTerm);
+                        
+                        if (!isNaN(numericSearch)) {
+                            const numericConditions = [];
+                            
                             if (searchTerm.includes('.')) {
-                                whereConditions.push('ROUND(temperature, 1) = ROUND(?, 1)');
+                                numericConditions.push('ROUND(temperature, 1) = ROUND(?, 1)');
                             } else {
-                                whereConditions.push('temperature = ?');
+                                numericConditions.push('temperature = ?');
                             }
-                            queryParams.push(numericSearch);
-                        } else if (filterType === 'Ánh sáng') {
-                            whereConditions.push('light_level = ?');
-                            queryParams.push(numericSearch);
-                        } else if (filterType === 'Độ ẩm') {
-                            whereConditions.push('humidity = ?');
-                            queryParams.push(numericSearch);
+                            
+                            numericConditions.push('light_level = ?');
+                            numericConditions.push('humidity = ?');
+                            
+                            whereConditions.push(`(${numericConditions.join(' OR ')})`);
+                            queryParams.push(numericSearch, numericSearch, numericSearch);
+                        } else {
+                            whereConditions.push('CAST(timestamp AS CHAR) LIKE ?');
+                            queryParams.push(`%${searchTerm}%`);
                         }
                     }
-                    // Nếu không phải số, bỏ qua tìm kiếm
-                } 
-                else if (!hasSpecificFilter && isTimeSearch) {
-                    // Chỉ cho phép tìm kiếm thời gian khi không có filter cụ thể
-                    const timeSearch = this.processTimeSearch(searchTerm);
-                    whereConditions.push(...timeSearch.conditions);
-                    queryParams.push(...timeSearch.params);
-                }
-                else if (isTimeSearch) {
-                    // Trường hợp có filter cụ thể + thời gian -> bỏ qua thời gian
-                    // Không thêm điều kiện nào
-                }
-                else {
-                    // Tìm kiếm số hoặc text thông thường
-                    const numericSearch = parseFloat(searchTerm);
-                    
-                    if (!isNaN(numericSearch)) {
-                        if (hasSpecificFilter) {
-                            // Nếu có filter cụ thể, chỉ tìm trên cột đó
+                } else {
+                    if (isTimeSearch) {
+                        const timeSearch = this.processTimeSearch(searchTerm);
+                        whereConditions.push(...timeSearch.conditions);
+                        queryParams.push(...timeSearch.params);
+                    } else {
+                        const numericSearch = parseFloat(searchTerm);
+                        if (!isNaN(numericSearch)) {
                             if (filterType === 'Nhiệt độ') {
                                 if (searchTerm.includes('.')) {
                                     whereConditions.push('ROUND(temperature, 1) = ROUND(?, 1)');
@@ -271,39 +268,20 @@ async getSensorDataPaged(page = 1, limit = 10, search = '', filterType = '', sor
                                 queryParams.push(numericSearch);
                             }
                         } else {
-                            // Nếu không có filter cụ thể, tìm trên tất cả các cột số
-                            const numericConditions = [];
-                            
-                            if (searchTerm.includes('.')) {
-                                numericConditions.push('ROUND(temperature, 1) = ROUND(?, 1)');
-                            } else {
-                                numericConditions.push('temperature = ?');
-                            }
-                            
-                            numericConditions.push('light_level = ?');
-                            numericConditions.push('humidity = ?');
-                            
-                            whereConditions.push(`(${numericConditions.join(' OR ')})`);
-                            queryParams.push(numericSearch, numericSearch, numericSearch);
-                        }
-                    } else {
-                        // Tìm kiếm text (chỉ cho phép trên timestamp khi không có filter cụ thể)
-                        if (!hasSpecificFilter) {
                             whereConditions.push('CAST(timestamp AS CHAR) LIKE ?');
                             queryParams.push(`%${searchTerm}%`);
                         }
-                        // Nếu có filter cụ thể và search là text, bỏ qua
                     }
                 }
             }
-    
+
             const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
-    
+
             let countQuery = `SELECT COUNT(*) as total FROM sensor_data ${whereClause}`;
             const [countResult] = await this.connection.execute(countQuery, queryParams);
             const totalItems = countResult[0].total;
             const totalPages = Math.ceil(totalItems / limit);
-    
+
             let dataQuery = `
                 SELECT
                     id,
@@ -318,7 +296,7 @@ async getSensorDataPaged(page = 1, limit = 10, search = '', filterType = '', sor
             `;
            
             const [rows] = await this.connection.execute(dataQuery, queryParams);
-    
+
             return {
                 data: rows,
                 totalItems,
@@ -327,7 +305,7 @@ async getSensorDataPaged(page = 1, limit = 10, search = '', filterType = '', sor
                 sortBy: safeSortBy,
                 sortOrder: safeSortOrder
             };
-    
+
         } catch (err) {
             console.error("❌ Error fetching sensor data:", err);
             throw err;
@@ -412,6 +390,102 @@ async getHistoryDevicePaged(page = 1, limit = 10, sortBy = 'timestamp', sortOrde
             await this.connection.end();
         }
     }
+    async getSensorStatistics(startDate, endDate) {
+        try {
+            console.log('Getting sensor statistics from', startDate, 'to', endDate);
+            
+            const query = `
+                SELECT 
+                    COUNT(CASE WHEN temperature > 35 THEN 1 END) as temperature_count,
+                    COUNT(CASE WHEN humidity > 80 THEN 1 END) as humidity_count,
+                    COUNT(CASE WHEN light_level > 800 THEN 1 END) as light_level_count
+                FROM sensor_data 
+                WHERE DATE(timestamp) >= ? 
+                  AND DATE(timestamp) < DATE_ADD(?, INTERVAL 1 DAY)
+            `;
+    
+            const [rows] = await this.executeQuery(query, [startDate, startDate]);
+
+if (!rows || rows.length === 0) {
+    console.log('No rows returned, using default');
+    return [
+        { date: startDate, sensor_type: 'temperature', exceed_count: 0 },
+        { date: startDate, sensor_type: 'humidity', exceed_count: 0 },
+        { date: startDate, sensor_type: 'light_level', exceed_count: 0 }
+    ];
 }
 
+const row = rows[0]; // Dòng đầu tiên
+console.log('Raw sensor row:', row);
+
+return [
+    { date: startDate, sensor_type: 'temperature', exceed_count: parseInt(row.temperature_count) || 0 },
+    { date: startDate, sensor_type: 'humidity', exceed_count: parseInt(row.humidity_count) || 0 },
+    { date: startDate, sensor_type: 'light_level', exceed_count: parseInt(row.light_level_count) || 0 }
+];
+    
+        } catch (error) {
+            console.error('Error getting sensor statistics:', error);
+            return [
+                { date: startDate, sensor_type: 'temperature', exceed_count: 0 },
+                { date: startDate, sensor_type: 'humidity', exceed_count: 0 },
+                { date: startDate, sensor_type: 'light_level', exceed_count: 0 }
+            ];
+        }
+    }
+    async getDeviceStatistics(startDate, endDate) {
+        try {
+            console.log('Getting device statistics from', startDate, 'to', endDate);
+            
+            const query = `
+                SELECT 
+                    device,
+                    COUNT(*) as turn_on_count
+                FROM device_history 
+                WHERE DATE(timestamp) >= ? 
+                  AND DATE(timestamp) < DATE_ADD(?, INTERVAL 1 DAY)
+                  AND status = 'ON'
+                  AND device IN ('light', 'fan', 'ac')
+                GROUP BY device
+            `;
+    
+            const [rows] = await this.executeQuery(query, [startDate, startDate]);
+            console.log('Raw device rows:', rows);
+    
+            // KHAI BÁO TRƯỚC KHI DÙNG
+            const allDevices = ['light', 'fan', 'ac'];
+            // ←←←←←←←←←←←←←←←←←←←←←←←←←←←
+    
+            const deviceMap = new Map();
+    
+            if (Array.isArray(rows) && rows.length > 0) {
+                rows.forEach(row => {
+                    const count = parseInt(row.turn_on_count) || 0;
+                    deviceMap.set(row.device, {
+                        device: row.device,
+                        date: startDate,
+                        turn_on_count: count
+                    });
+                });
+            }
+    
+            // DÙNG allDevices SAU KHI ĐÃ KHAI BÁO
+            const finalResult = allDevices.map(device => 
+                deviceMap.get(device) || { device, date: startDate, turn_on_count: 0 }
+            );
+    
+            console.log('Final device statistics:', finalResult);
+            return finalResult;
+    
+        } catch (error) {
+            console.error('Error getting device statistics:', error);
+            // TRẢ VỀ DEFAULT AN TOÀN
+            return [
+                { device: 'light', date: startDate, turn_on_count: 0 },
+                { device: 'fan', date: startDate, turn_on_count: 0 },
+                { device: 'ac', date: startDate, turn_on_count: 0 }
+            ];
+        }
+    }
+}
 module.exports = new DatabaseHandler();
