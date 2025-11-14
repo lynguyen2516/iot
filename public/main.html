@@ -90,51 +90,65 @@
                 <div class="devices-panel">
                     <h3>Thiết bị</h3>
 
-                    <!-- Đèn -->
-                    <div class="device-control" id="lightControl">
-                        <div class="device-content">
-                            <i class="device-icon light-icon" data-lucide="lightbulb"></i>
-                            <span>Đèn</span>
-                        </div>
-                        <div class="toggle-switch">
-                            <input type="checkbox" id="lightSwitch">
-                            <label for="lightSwitch"></label>
-                        </div>
-                    </div>
+                   <!-- Đèn -->
+<div class="device-control" id="lightControl">
+    <div class="device-content">
+        <i class="device-icon light-icon" data-lucide="lightbulb"></i>
+        <div class="device-info">
+            <span class="device-name">Đèn</span>
+            <span class="activation-count">Lượt bật: <span id="lightActivationCount">0</span></span>
+        </div>
+    </div>
+    <div class="toggle-switch">
+        <input type="checkbox" id="lightSwitch">
+        <label for="lightSwitch"></label>
+    </div>
+</div>
 
-                    <!-- Điều hòa -->
-                    <div class="device-control" id="acControl">
-                        <div class="device-content">
-                            <i class="device-icon ac-icon" data-lucide="snowflake"></i>
-                            <span>Điều hòa</span>
-                        </div>
-                        <div class="toggle-switch">
-                            <input type="checkbox" id="acSwitch">
-                            <label for="acSwitch"></label>
-                        </div>
-                    </div>
+<!-- Điều hòa -->
+<div class="device-control" id="acControl">
+    <div class="device-content">
+        <i class="device-icon ac-icon" data-lucide="snowflake"></i>
+        <div class="device-info">
+            <span class="device-name">Điều hòa</span>
+            <span class="activation-count">Lượt bật: <span id="acActivationCount">0</span></span>
+        </div>
+    </div>
+    <div class="toggle-switch">
+        <input type="checkbox" id="acSwitch">
+        <label for="acSwitch"></label>
+    </div>
+</div>
 
-                    <!-- Quạt -->
-                    <div class="device-control" id="fanControl">
-                        <div class="device-content">
-                            <i class="device-icon fan-icon" data-lucide="fan"></i>
-                            <span>Quạt</span>
-                        </div>
-                        <div class="toggle-switch">
-                            <input type="checkbox" id="fanSwitch">
-                            <label for="fanSwitch"></label>
-                        </div>
-                    </div>
-                    <div class="device-control" id="bellControl">
-                        <div class="device-content">
-                            <i class="device-icon bell-icon" data-lucide="bell"></i>
-                            <span>Chuông</span>
-                        </div>
-                        <div class="toggle-switch">
-                            <input type="checkbox" id="bellSwitch">
-                            <label for="bellSwitch"></label>
-                        </div>
-                    </div>
+<!-- Quạt -->
+<div class="device-control" id="fanControl">
+    <div class="device-content">
+        <i class="device-icon fan-icon" data-lucide="fan"></i>
+        <div class="device-info">
+            <span class="device-name">Quạt</span>
+            <span class="activation-count">Lượt bật: <span id="fanActivationCount">0</span></span>
+        </div>
+    </div>
+    <div class="toggle-switch">
+        <input type="checkbox" id="fanSwitch">
+        <label for="fanSwitch"></label>
+    </div>
+</div>
+
+<!-- Chuông -->
+<div class="device-control" id="bellControl">
+    <div class="device-content">
+        <i class="device-icon bell-icon" data-lucide="bell"></i>
+        <div class="device-info">
+            <span class="device-name">Chuông</span>
+            <span class="activation-count">Lượt bật: <span id="bellActivationCount">0</span></span>
+        </div>
+    </div>
+    <div class="toggle-switch">
+        <input type="checkbox" id="bellSwitch">
+        <label for="bellSwitch"></label>
+    </div>
+</div>
 
                 </div>
             </section>

@@ -8,7 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const lightSwitch = document.getElementById('lightSwitch');
     const acSwitch = document.getElementById('acSwitch');
     const fanSwitch = document.getElementById('fanSwitch');
-    const bellSwitch= document.getElementById('bellSwitch');
+    const bellSwitch = document.getElementById('bellSwitch');
 
     let mainCombinedChart;
     let pendingConfirmations = new Set();
@@ -19,6 +19,74 @@ document.addEventListener('DOMContentLoaded', () => {
         fan: 'OFF',
         bell:'OFF'
     };
+
+    // Ẩn loading khi trang load xong
+    const loadingOverlay = document.getElementById('loadingOverlay');
+    if (loadingOverlay) {
+        loadingOverlay.style.display = 'none';
+    }
+
+    // Hàm fetch dashboard data mới
+    async function fetchDashboardData() {
+        try {
+            console.log('🔍 Fetching dashboard data...');
+            const response = await fetch('/api/dashboard_data');
+            if (!response.ok) throw new Error('Network response was not ok');
+
+            const data = await response.json();
+            console.log('📊 Dashboard data received:', data);
+            
+            updateDashboardData(data);
+        } catch (error) {
+            console.error('Error fetching dashboard data:', error);
+        }
+    }
+
+    // Hàm cập nhật toàn bộ dashboard
+    function updateDashboardData(data) {
+        console.log('🎯 Updating dashboard with data');
+        
+        if (!data) {
+            console.error('❌ No data received');
+            return;
+        }
+        
+        // Cập nhật giá trị cảm biến
+        if (data.latestSensor && Object.keys(data.latestSensor).length > 0) {
+            updateMetricCards(data.latestSensor);
+        }
+
+        // Cập nhật trạng thái thiết bị
+        if (data.devices) {
+            updateDeviceUI('light', data.devices.light);
+            updateDeviceUI('ac', data.devices.ac);
+            updateDeviceUI('fan', data.devices.fan);
+            updateDeviceUI('bell', data.devices.bell);
+            
+            lastKnownStates.light = data.devices.light;
+            lastKnownStates.ac = data.devices.ac;
+            lastKnownStates.fan = data.devices.fan;
+            lastKnownStates.bell = data.devices.bell;
+        }
+
+        // Cập nhật lượt bật thiết bị - QUAN TRỌNG!
+        if (data.deviceActivationCounts) {
+            console.log('🔢 Updating activation counts:', data.deviceActivationCounts);
+            updateActivationCounts(data.deviceActivationCounts);
+        } else {
+            console.warn('⚠️ No deviceActivationCounts in data');
+        }
+
+        // Cập nhật dữ liệu biểu đồ
+        if (data.chartData && data.chartData.length > 0) {
+            initializeCharts(data.chartData);
+        }
+
+        // Cập nhật trạng thái kết nối
+        if (data.esp32Online !== undefined) {
+            updateESP32Status(data.esp32Online);
+        }
+    }
 
     function updateMetricCards(data) {
         const { temperature, humidity, light_level } = data;
@@ -71,7 +139,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function updateESP32Status(online) {
         esp32Online = online;
         
-        [lightSwitch, acSwitch, fanSwitch,bellSwitch].forEach(switchEl => {
+        [lightSwitch, acSwitch, fanSwitch, bellSwitch].forEach(switchEl => {
             if (switchEl) {
                 const deviceName = switchEl.id.replace('Switch', '');
                 switchEl.disabled = !online || pendingConfirmations.has(deviceName);
@@ -86,42 +154,38 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    async function fetchInitialData() {
-        try {
-            const response = await fetch('/api/dashboard_data');
-            if (!response.ok) throw new Error('Network response was not ok');
-
-            const data = await response.json(); 
-
-            if (data.latestSensor && Object.keys(data.latestSensor).length > 0) {
-                updateMetricCards(data.latestSensor);
+    // Hàm cập nhật lượt bật thiết bị
+    function updateActivationCounts(counts) {
+        console.log('🔄 [FRONTEND] Updating activation counts with:', counts);
+        
+        const elements = {
+            light: document.getElementById('lightActivationCount'),
+            ac: document.getElementById('acActivationCount'),
+            fan: document.getElementById('fanActivationCount'),
+            bell: document.getElementById('bellActivationCount')
+        };
+        
+        console.log('🔍 [FRONTEND] Found HTML elements:', {
+            light: elements.light ? 'FOUND' : 'NOT FOUND',
+            ac: elements.ac ? 'FOUND' : 'NOT FOUND', 
+            fan: elements.fan ? 'FOUND' : 'NOT FOUND',
+            bell: elements.bell ? 'FOUND' : 'NOT FOUND'
+        });
+        
+        // Cập nhật từng element
+        for (const [device, element] of Object.entries(elements)) {
+            if (element) {
+                const count = counts[device] || 0;
+                element.textContent = count;
+                console.log(`✅ [FRONTEND] Set ${device} to: ${count}`);
+            } else {
+                console.error(`❌ [FRONTEND] Element not found for: ${device}`);
             }
-
-            if (data.devices) {
-                updateDeviceUI('light', data.devices.light);
-                updateDeviceUI('ac', data.devices.ac);
-                updateDeviceUI('fan', data.devices.fan);
-                updateDeviceUI('bell',data.devices.bell);
-                
-                lastKnownStates.light = data.devices.light;
-                lastKnownStates.ac = data.devices.ac;
-                lastKnownStates.fan = data.devices.fan;
-                lastKnownStates.bell=data.devices.bell;
-            }
-
-            if (data.esp32Online !== undefined) {
-                updateESP32Status(data.esp32Online);
-            }
-
-            if (data.chartData && data.chartData.length > 0) {
-                initializeCharts(data.chartData); 
-            }
-        } catch (error) {
-            console.error('Failed to fetch initial data from API:', error);
         }
     }
 
-    fetchInitialData();
+    // Khởi tạo dữ liệu ban đầu
+    fetchDashboardData();
 
     function initializeCharts(initialData) {
         if (initialData.length === 0) return;
@@ -234,6 +298,7 @@ document.addEventListener('DOMContentLoaded', () => {
         mainCombinedChart.update('none');
     }
 
+    // Socket events
     socket.on('sensor_update', (data) => {
         updateMetricCards(data);
         updateCharts(data);
@@ -242,6 +307,10 @@ document.addEventListener('DOMContentLoaded', () => {
     socket.on('device_status_confirmed', (data) => {
         pendingConfirmations.delete(data.device);
         updateDeviceUI(data.device, data.status, false);
+        
+        // Refresh lại lượt bật khi có thiết bị thay đổi trạng thái
+        console.log('🔄 Device status changed, refreshing activation counts...');
+        fetchDashboardData();
     });
 
     socket.on('device_control_error', (data) => {
@@ -258,7 +327,7 @@ document.addEventListener('DOMContentLoaded', () => {
     socket.on('esp32_connected', () => {
         updateESP32Status(true);
         pendingConfirmations.clear();
-        fetchInitialData();
+        fetchDashboardData();
     });
 
     socket.on('current_states', (data) => {
@@ -305,5 +374,5 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    [lightSwitch, acSwitch, fanSwitch,bellSwitch].forEach(setupDeviceControl);
+    [lightSwitch, acSwitch, fanSwitch, bellSwitch].forEach(setupDeviceControl);
 });

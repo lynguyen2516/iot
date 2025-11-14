@@ -73,29 +73,98 @@ class DatabaseHandler {
         );
     }
 
-    async getDashboardData() {
-        const latestRows = await this.executeQuery(
-            'SELECT ROUND(temperature, 1) as temperature, humidity, light_level FROM sensor_data ORDER BY timestamp DESC LIMIT 1'
-        );
-        
-        const chartRows = await this.executeQuery(
-            'SELECT timestamp, ROUND(temperature, 1) as temperature, humidity, light_level FROM sensor_data ORDER BY timestamp DESC LIMIT 20'
-        );
-
-        const devices = {
-            light: await this.getDeviceStatus('light'),
-            ac: await this.getDeviceStatus('ac'),
-            fan: await this.getDeviceStatus('fan'),
-            bell:await this.getDeviceStatus('bell')
-        };
-
-        return {
-            latestSensor: latestRows[0] || {},
-            chartData: chartRows.reverse(),
-            devices
-        };
+    async getDeviceActivationCountToday() {
+        try {
+            const today = new Date().toISOString().split('T')[0];
+            const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+            
+            console.log('🔍 [DEBUG] Date range for activation count:', today, 'to', tomorrow);
+            
+            const query = `
+                SELECT device, COUNT(*) as activation_count 
+                FROM device_history 
+                WHERE status = 'ON' 
+                AND timestamp >= ? 
+                AND timestamp < ?
+                GROUP BY device
+            `;
+            
+            const result = await this.executeQuery(query, [today, tomorrow]);
+            console.log('🔍 [DEBUG] Raw SQL result:', result);
+            
+            const activationCounts = {
+                light: 0,
+                ac: 0,
+                fan: 0,
+                bell: 0
+            };
+            
+            // SỬA LỖI: result là ARRAY chứa các object
+        if (Array.isArray(result)) {
+            result.forEach(row => {
+                if (row && row.device) {
+                    console.log(`✅ Setting ${row.device} count to ${row.activation_count}`);
+                    activationCounts[row.device] = row.activation_count;
+                }
+            });
+        } else if (result && result.device) {
+            // Trường hợp chỉ có 1 device (backup)
+            console.log(`✅ Single device: ${result.device} count to ${result.activation_count}`);
+            activationCounts[result.device] = result.activation_count;
+        }
+            console.log('🔍 [DEBUG] Final activation counts:', activationCounts);
+            return activationCounts;
+            
+        } catch (error) {
+            console.error('❌ Error getting device activation count:', error);
+            return { light: 0, ac: 0, fan: 0, bell: 0 };
+        }
     }
-
+    async getDashboardData() {
+        try {
+            console.log('🔍 [DEBUG] Starting getDashboardData...');
+            
+            const latestRows = await this.executeQuery(
+                'SELECT ROUND(temperature, 1) as temperature, humidity, light_level FROM sensor_data ORDER BY timestamp DESC LIMIT 1'
+            );
+            
+            const chartRows = await this.executeQuery(
+                'SELECT timestamp, ROUND(temperature, 1) as temperature, humidity, light_level FROM sensor_data ORDER BY timestamp DESC LIMIT 20'
+            );
+    
+            const devices = {
+                light: await this.getDeviceStatus('light'),
+                ac: await this.getDeviceStatus('ac'),
+                fan: await this.getDeviceStatus('fan'),
+                bell: await this.getDeviceStatus('bell')
+            };
+    
+            // Thêm lượt bật của tất cả thiết bị trong ngày
+            console.log('🔍 [DEBUG] Getting activation counts...');
+            const deviceActivationCounts = await this.getDeviceActivationCountToday();
+            console.log('🔍 [DEBUG] Activation counts received:', deviceActivationCounts);
+    
+            const result = {
+                latestSensor: latestRows[0] || {},
+                chartData: chartRows.reverse(),
+                devices,
+                deviceActivationCounts: deviceActivationCounts || { light: 0, ac: 0, fan: 0, bell: 0 } // ĐẢM BẢO LUÔN CÓ
+            };
+            
+            console.log('🔍 [DEBUG] Final dashboard data:', JSON.stringify(result, null, 2));
+            return result;
+            
+        } catch (error) {
+            console.error('❌ Error in getDashboardData:', error);
+            // Vẫn trả về object với activation counts mặc định
+            return {
+                latestSensor: {},
+                chartData: [],
+                devices: { light: 'OFF', ac: 'OFF', fan: 'OFF', bell: 'OFF' },
+                deviceActivationCounts: { light: 0, ac: 0, fan: 0, bell: 0 }
+            };
+        }
+    }
     processTimeSearch(searchTerm) {
         let conditions = [];
         let params = [];

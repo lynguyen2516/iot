@@ -18,6 +18,12 @@ class MQTTHandler {
     constructor() {
         this.client = null;
         this.io = null;
+        this.previousDeviceStates = { 
+            light: 'OFF',
+            ac: 'OFF', 
+            fan: 'OFF',
+            bell: 'OFF'
+        };
     }
 
     setIO(io) {
@@ -126,11 +132,23 @@ class MQTTHandler {
                 case 'led1': deviceName = 'light'; break;
                 case 'led2': deviceName = 'ac'; break;
                 case 'led3': deviceName = 'fan'; break;
-                case 'led4': deviceName='bell';break;
+                case 'led4': deviceName = 'bell'; break;
                 default: return;
             }
             
             console.log(`🎛️ Device status received - ${deviceName}: ${status}`);
+
+            // Kiểm tra nếu thiết bị chuyển từ OFF sang ON (chỉ đếm khi BẬT lên)
+            const wasPreviouslyOff = this.previousDeviceStates[deviceName] === 'OFF';
+            const isNowOn = status === 'ON';
+            
+            if (wasPreviouslyOff && isNowOn) {
+                console.log(`🔢 ${deviceName} was turned ON - counting activation`);
+                // Lượt bật đã được tự động ghi vào database thông qua saveDeviceHistory
+            }
+
+            // Cập nhật trạng thái trước đó
+            this.previousDeviceStates[deviceName] = status;
 
             esp32Monitor.updateDeviceState(deviceName, status);
             
@@ -148,6 +166,7 @@ class MQTTHandler {
             console.error('❌ Error handling device control:', error);
         }
     }
+    
 
     emitESP32Connected() {
         this.io.emit('esp32_connected');
