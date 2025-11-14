@@ -12,6 +12,7 @@ const TOPIC_SENSOR = 'datasensor/all';
 const TOPIC_STATUS_LED1 = 'esp32/led1/status';
 const TOPIC_STATUS_LED2 = 'esp32/led2/status';
 const TOPIC_STATUS_LED3 = 'esp32/led3/status';
+const TOPIC_STATUS_LED4 ='esp32/led4/status';
 
 class MQTTHandler {
     constructor() {
@@ -41,7 +42,7 @@ class MQTTHandler {
     }
 
     subscribeToTopics() {
-        const topics = [TOPIC_SENSOR, TOPIC_STATUS_LED1, TOPIC_STATUS_LED2, TOPIC_STATUS_LED3];
+        const topics = [TOPIC_SENSOR, TOPIC_STATUS_LED1, TOPIC_STATUS_LED2, TOPIC_STATUS_LED3,TOPIC_STATUS_LED4];
         this.client.subscribe(topics, (err) => {
             if (!err) console.log('✅ Subscribed to all topics!');
         });
@@ -125,6 +126,7 @@ class MQTTHandler {
                 case 'led1': deviceName = 'light'; break;
                 case 'led2': deviceName = 'ac'; break;
                 case 'led3': deviceName = 'fan'; break;
+                case 'led4': deviceName='bell';break;
                 default: return;
             }
             

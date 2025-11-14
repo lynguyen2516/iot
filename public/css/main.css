@@ -122,6 +122,7 @@ body {
 .metric-card.temperature { background-color: #fde9df; }
 .metric-card.humidity { background-color: #e3f1ff; }
 .metric-card.light { background-color: #fff9d9; }
+.metric-card.newsensor { background-color: #fff9d9; }
 
 .sensor {
     font-size: 1.1rem;
@@ -254,6 +255,9 @@ body {
 .device-icon.fan-icon {
     color: #a0a6b2;
 }
+.device-icon.bell-icon {
+    color: #a0a6b2;
+}
 
 /* Trạng thái bật - thay đổi màu sắc và thêm hiệu ứng */
 .device-control.is-on .device-icon.light-icon {
@@ -269,6 +273,11 @@ body {
 .device-control.is-on .device-icon.fan-icon {
     color: #81c784;
     animation: fanSpin 1s linear infinite;
+}
+
+.device-control.is-on .device-icon.bell-icon {
+    color: #81c784;
+    filter: drop-shadow(0 0 8px rgba(79, 195, 247, 0.6));
 }
 
 /* Hiệu ứng quay cho quạt */

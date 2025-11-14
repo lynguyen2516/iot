@@ -24,7 +24,7 @@ class DatabaseHandler {
 
     async initializeDeviceStates() {
         try {
-            const devices = ['light', 'ac', 'fan'];
+            const devices = ['light', 'ac', 'fan','bell'];
             for (const device of devices) {
                 await this.getDeviceStatus(device);
             }
@@ -85,7 +85,8 @@ class DatabaseHandler {
         const devices = {
             light: await this.getDeviceStatus('light'),
             ac: await this.getDeviceStatus('ac'),
-            fan: await this.getDeviceStatus('fan')
+            fan: await this.getDeviceStatus('fan'),
+            bell:await this.getDeviceStatus('bell')
         };
 
         return {

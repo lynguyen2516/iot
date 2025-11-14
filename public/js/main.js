@@ -4,9 +4,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const tempValueEl = document.getElementById('temperatureValue');
     const humiValueEl = document.getElementById('humidityValue');
     const lightValueEl = document.getElementById('lightValue');
+
     const lightSwitch = document.getElementById('lightSwitch');
     const acSwitch = document.getElementById('acSwitch');
     const fanSwitch = document.getElementById('fanSwitch');
+    const bellSwitch= document.getElementById('bellSwitch');
 
     let mainCombinedChart;
     let pendingConfirmations = new Set();
@@ -14,7 +16,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let lastKnownStates = {
         light: 'OFF',
         ac: 'OFF', 
-        fan: 'OFF'
+        fan: 'OFF',
+        bell:'OFF'
     };
 
     function updateMetricCards(data) {
@@ -57,16 +60,18 @@ document.addEventListener('DOMContentLoaded', () => {
         updateDeviceUI('light', 'OFF');
         updateDeviceUI('ac', 'OFF');
         updateDeviceUI('fan', 'OFF');
+        updateDeviceUI('bell','OFF');
         
         lastKnownStates.light = 'OFF';
         lastKnownStates.ac = 'OFF';
         lastKnownStates.fan = 'OFF';
+        lastKnownStates.bell='OFF';
     }
 
     function updateESP32Status(online) {
         esp32Online = online;
         
-        [lightSwitch, acSwitch, fanSwitch].forEach(switchEl => {
+        [lightSwitch, acSwitch, fanSwitch,bellSwitch].forEach(switchEl => {
             if (switchEl) {
                 const deviceName = switchEl.id.replace('Switch', '');
                 switchEl.disabled = !online || pendingConfirmations.has(deviceName);
@@ -96,10 +101,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 updateDeviceUI('light', data.devices.light);
                 updateDeviceUI('ac', data.devices.ac);
                 updateDeviceUI('fan', data.devices.fan);
+                updateDeviceUI('bell',data.devices.bell);
                 
                 lastKnownStates.light = data.devices.light;
                 lastKnownStates.ac = data.devices.ac;
                 lastKnownStates.fan = data.devices.fan;
+                lastKnownStates.bell=data.devices.bell;
             }
 
             if (data.esp32Online !== undefined) {
@@ -298,5 +305,5 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    [lightSwitch, acSwitch, fanSwitch].forEach(setupDeviceControl);
+    [lightSwitch, acSwitch, fanSwitch,bellSwitch].forEach(setupDeviceControl);
 });

@@ -6,7 +6,8 @@ class ESP32Monitor {
         this.deviceStates = {
             light: 'OFF',
             ac: 'OFF',
-            fan: 'OFF'
+            fan: 'OFF',
+            bell:'OFF'
         };
     }
 
@@ -38,6 +39,7 @@ class ESP32Monitor {
         this.deviceStates.light = 'OFF';
         this.deviceStates.ac = 'OFF';
         this.deviceStates.fan = 'OFF';
+        this.deviceStates.bell='OFF';
     }
 
     checkConnection() {

@@ -41,7 +41,7 @@ class SocketHandler {
         
         console.log(`🎛️ Frontend device control: ${device} -> ${status}`);
 
-        const validDevices = ['light', 'ac', 'fan'];
+        const validDevices = ['light', 'ac', 'fan','bell'];
         const validStatus = ['ON', 'OFF'];
         
         if (!validDevices.includes(device) || !validStatus.includes(status)) {
@@ -82,6 +82,7 @@ class SocketHandler {
             case 'light': return 'esp32/led1/control';
             case 'ac': return 'esp32/led2/control';
             case 'fan': return 'esp32/led3/control';
+            case 'bell':return 'esp32/led4/control';
             default: return '';
         }
     }
